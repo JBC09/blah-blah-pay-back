@@ -1,0 +1,92 @@
+//
+// Created by chanbin on 25. 3. 4.
+//
+
+#ifndef DATABASEMANAGER_H
+#define DATABASEMANAGER_H
+#include <memory>
+#include <iostream>
+
+#include "database.h"
+#include "mysql.h"
+
+enum class DatabaseType
+{
+    MYSQL
+    // ex) SQLITE, POSTGRESQL
+};
+
+class DatabaseManager {
+
+private:
+    // 싱글톤 핵심 인스턴스
+    static std::unique_ptr<DatabaseManager> instance;
+
+    // Database 종류들이 들어가 있는 hash
+    static std::map<DatabaseType, std::shared_ptr<Database>> DatabaseHash;
+
+    // 선택된 Database type
+    DatabaseType DbType;
+
+public:
+
+    // Database Hash DB Insert
+    inline static void init();
+
+    // 싱글톤 인스턴스를 반환하는 함수
+    static std::unique_ptr<DatabaseManager> getInstance();
+
+    // 싱글톤 인스턴스를 풀어주는 함수
+    static std::unique_ptr<DatabaseManager> releaseInstance();
+
+    // Database 종류를 변경하는 함수
+    inline void setDatabase(DatabaseType type);
+
+    // 현재 선택된 Database를 가져오는 함수
+    std::shared_ptr<Database> getCurrentDatabase();
+
+};
+
+
+std::unique_ptr<DatabaseManager> DatabaseManager::instance = nullptr;
+
+
+// DB hash 초기화
+inline void DatabaseManager::init()
+{
+   DatabaseHash.insert({DatabaseType::MYSQL, std::make_shared<Mysql>()});
+    // 원하는 데이터 베이스 추가하면 됨
+};
+
+
+// DatabaseManger class의 싱글톤 패턴의 중요한 겟 인스턴스 함수
+inline std::unique_ptr<DatabaseManager> DatabaseManager::getInstance()
+{
+    // 존재하는 인스턴스가 없다면
+    if (instance == nullptr)
+    {
+        // 새로운 unique 스마트 포인터로 생성
+        instance = std::make_unique<DatabaseManager>();
+    }
+
+    // instance의 소유권 이전 move
+    return std::move(instance);
+}
+
+
+// 내가 원하는 데이터 베이스 종류로 변경
+inline void DatabaseManager::setDatabase(DatabaseType type)
+{
+    // Database 타입을 인자로 받은 값으로 변경
+    DbType = type;
+}
+
+// 데이터 베이스를 반환하는 함수
+inline std::shared_ptr<Database> DatabaseManager::getCurrentDatabase()
+{
+    // 현재 dbType에 맞는 Database를 스마트 포인터 형탤 소유권 이전 -> move
+    return DatabaseHash[DbType];
+}
+
+
+#endif //DATABASEMANAGER_H
